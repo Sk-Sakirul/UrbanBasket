@@ -30,4 +30,4 @@ const orderSchema = new mongoose.Schema({
   payerId: String,
 });
 
-module.exports = mongoose.module("Order", orderSchema);
+module.exports = mongoose.model("Order", orderSchema);
