@@ -2,6 +2,9 @@ const paypal = require("../../helpers/paypal");
 const CartModel = require("../../models/cart.model");
 const Order = require("../../models/order.model");
 const Product = require("../../models/product.model");
+require('dotenv').config();
+
+const url = process.env.BASE_URL;
 
 const createOrder = async (req, res) => {
   try {
@@ -20,14 +23,22 @@ const createOrder = async (req, res) => {
       cartId,
     } = req.body;
 
+    if (!cartItems || cartItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Your cart is empty. Cannot create order",
+      });
+    }
+
+
     const create_payment_json = {
       intent: "sale",
       payer: {
         payment_method: "paypal",
       },
       redirect_urls: {
-        return_url: "http://localhost:5173/shop/paypal-return",
-        cancel_url: "http://localhost:5173/shop/paypal-cancel",
+        return_url: `${url}/shop/paypal-return`,
+        cancel_url: `${url}/shop/paypal-cancel`,
       },
       transactions: [
         {
@@ -35,7 +46,7 @@ const createOrder = async (req, res) => {
             items: cartItems.map((item) => ({
               name: item.title,
               sku: item.productId,
-              price: item.price.toFixed(2),
+              price: Number(item.price.toFixed(2)),
               currency: "USD",
               quantity: item.quantity,
             })),
@@ -75,9 +86,15 @@ const createOrder = async (req, res) => {
 
         await newlyCreatedOrder.save();
 
-        const approvalURL = paymentInfo.links.find(
-          (link) => link.rel === "approval_url"
-        ).href;
+        const approvalLink = paymentInfo.links.find(
+          (l) => l.rel === "approval_url"
+        );
+        if (!approvalLink) {
+          return res
+            .status(500)
+            .json({ success: false, message: "Approval URL not found" });
+        }
+        const approvalURL = approvalLink.href;
 
         res.status(201).json({
           success: true,
@@ -86,7 +103,7 @@ const createOrder = async (req, res) => {
         });
       }
     });
-  } catch (e) {
+  } catch (error) {
     console.log(error);
     res.status(500).json({
       success: false,
@@ -116,10 +133,10 @@ const capturePayment = async (req, res) => {
     for (let item of order.cartItems) {
       let product = await Product.findById(item.productId);
 
-      if (!product) {
-        return res.status(404).json({
+      if (product.totalStock < item.quantity) {
+        return res.status(400).json({
           success: false,
-          message: `Not enough stock for this product ${product.title}`,
+          message: `Not enough stock for ${product.title}`,
         });
       }
 
@@ -138,7 +155,7 @@ const capturePayment = async (req, res) => {
       message: "Order confirmed",
       data: order,
     });
-  } catch (e) {
+  } catch (error) {
     console.log(error);
     res.status(500).json({
       success: false,
@@ -164,7 +181,7 @@ const getAllOrdersByUser = async (req, res) => {
       success: true,
       data: orders,
     });
-  } catch (e) {
+  } catch (error) {
     console.log(error);
     res.status(500).json({
       success: false,
@@ -190,7 +207,7 @@ const getOrderDetails = async (req, res) => {
       success: true,
       data: order,
     });
-  } catch (e) {
+  } catch (error) {
     console.log(error);
     res.status(500).json({
       success: false,

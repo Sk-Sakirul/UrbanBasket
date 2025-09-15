@@ -25,9 +25,11 @@ app.use(express.json());
 
 connectToDB();
 
+const url = process.env.BASE_URL;
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: `${url}`,
     methods: ["GET", "POST", "DELETE", "PUT"],
     allowedHeaders: [
       "Content-Type",
