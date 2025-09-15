@@ -22,6 +22,7 @@
     "@radix-ui/react-toast": "^1.2.15",
     "@reduxjs/toolkit": "^2.9.0",
     "@tailwindcss/vite": "^4.1.13",
+    "antd": "^5.27.3",
     "autoprefixer": "^10.4.21",
     "axios": "^1.12.1",
     "class-variance-authority": "^0.7.1",
